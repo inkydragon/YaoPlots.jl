@@ -1,2 +1,5 @@
 # Luxor Output
 *.png
+*.svg
+
+*.bat
