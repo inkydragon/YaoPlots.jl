@@ -46,18 +46,33 @@ P() = O
 
 Draw n lines for n QBits.
 """
-function init_qbit_line(nQBits=1; dx=ΔX, dy=ΔY)
-    # nQBits = 4
-    StartX = -50
+function init_qbit_line(nQBits=1, init_state=[]; dx=ΔX, dy=ΔY)
+    
+    if init_state != []
+        @assert length(init_state)==nQBits "len(init_state) != nQBits"
+        for i in 1:nQBits
+            state = init_state[i]
+            @assert state in [-1 0 1] "state[$i]: $state should use [-1, 0, 1]"
+        end
+    end
+    
+    states = [
+        init_state == [] ?
+            -1 :
+            init_state[i] for
+            i in 1:nQBits
+    ]
+    
+    StartX = -20
     StartY = 0
-    EndX = 200
+    EndX = 190
     # TODO: Move those to parameter list.
     
     LineStartP = Point(StartX, StartY)
     LineEndP = Point(EndX, 0)
     for y in 1:nQBits
         line(LineStartP, LineEndP, :stroke)
-        txtQbit(StartX-30, y)
+        txtQbit(StartX-30, y, states[y])
         LineStartP += ΔY
         LineEndP += ΔY
     end
@@ -201,6 +216,29 @@ ConstantGate:
 
 =#
 
+function Measure(C::Point, high=20)
+    # draw background
+    sethue("white"); box(C, high*1.5, high, :fill)
+    
+    # draw border
+    sethue("black"); box(C, high*1.5, high, :stroke)
+    
+    # draw arc
+    lc = C + Point(0, high/2)
+    arc(lc, high*0.6, pi*1.15, pi*1.85)
+    
+    # draw pointer 
+    p1 = C + Point(0, high*0.2)
+    p2 = C + Point(high*0.4, -high*0.4)
+    line(p1, p2, :stroke)
+end
+
+function End(C::Point, high=20)
+    p1 = C + Point(high/2, -high/2)
+    p2 = C + high/2
+    line(p1, p2, :stroke)
+end
+
 
 
 """
@@ -254,8 +292,11 @@ ConstantGate
 
 =#
 
-function CNOT(d::Dict, col::Int=1)
-    throw("Not implement")
+function CNOT(NNode_y::Int, CNode_y::Int, col::Int)
+    MultiQBitGate(
+        Dict(NNode_y=>"N", CNode_y=>"C"), 
+        col
+    )
 end
 
 function SWAP(d::Dict, col::Int=1)
@@ -271,31 +312,53 @@ end
     using
 =#
 
+# @svg begin
+# rulers()
+# init_qbit_line(8)
+# 
+# 
+# gate(P(), "α")
+# gate(P(2), 'H')
+# gate(P(3), "U")
+# gate(P(4), "-Z")
+# gate(P(2,2), "H")
+# 
+# NotControlCircle(P(1,2))
+# ControlCircle(P(1,3))
+# Not(P(1,4))
+# Cross(P(1,5))
+# Measure(P(6, 1))
+# End(P(7, 1))
+# Measure(P(6, 2))
+# gate(P(7, 2), 'H')
+# 
+# MultiQBitGate(Dict(2=>"",3=>"",4=>"NC",5=>"N"), 4)
+# MultiQBitGate(
+#     Dict(
+#         1=>"X",  2=>"",  3=>"",
+#         4=>"NC", 5=>"N", 6=>"SG:H",
+#         7=>"SG:X", 8=>"SG:ρ"
+#     ), 
+#     5
+# )
+# end
+
+
+#= Demo
+- [Prepare Greenberger–Horne–Zeilinger state with Quantum Circuit · Yao.jl](https://quantumbfs.github.io/Yao.jl/stable/tutorial/GHZ/#Prepare-Greenberger%E2%80%93Horne%E2%80%93Zeilinger-state-with-Quantum-Circuit-1)
+=#
 @svg begin
-nQbits = 8
-nGates = 1
-rulers()
-init_qbit_line(nQbits)
 
+init_qbit_line(4, zeros(Int, 4))
 
-gate(P(), "α")
-gate(P(2), 'H')
-gate(P(3), "U")
-gate(P(4), "-Z")
-gate(P(2,2), "H")
+gate(P(), "X")
+[gate(P(1, i), 'H') for i in 2:4]
+CNOT(1,2,2); CNOT(3,4,2)
+CNOT(1,3,3)
+CNOT(3,4,4)
+[gate(P(5, i), 'H') for i in 1:4]
+[Measure(P(6, i)) for i in 1:4]
+[End(P(7, i)) for i in 1:4]
 
-NotControlCircle(P(1,2))
-ControlCircle(P(1,3))
-Not(P(1,4))
-Cross(P(1,5))
+end 500 300
 
-MultiQBitGate(Dict(2=>"",3=>"",4=>"NC",5=>"N"), 4)
-MultiQBitGate(
-    Dict(
-        1=>"X",  2=>"",  3=>"",
-        4=>"NC", 5=>"N", 6=>"SG:H",
-        7=>"SG:X", 8=>"SG:ρ"
-    ), 
-    5
-)
-end
