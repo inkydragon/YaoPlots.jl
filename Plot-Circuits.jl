@@ -1,7 +1,11 @@
 using Luxor
 
 #=
-Gate ref: Quantum Circuit Diagrams in LATEX\P11\3.2 Gates
+Gate ref: 
+- Quantum Circuit Diagrams in LATEX\P11\3.2 Gates
+- [QASM: Qubit gate operations](https://www.quantum-inspire.com/kbase/qasm-qubit-gate-operations/)
+- [Microsoft.Quantum.Primitive | Microsoft Docs](https://docs.microsoft.com/en-us/qsharp/api/prelude/microsoft.quantum.primitive?view=qsharp-preview)
+- [Yao.jl/ConstGateGen.jl at master · QuantumBFS/Yao.jl](https://github.com/QuantumBFS/Yao.jl/blob/master/src/Blocks/ConstGateGen.jl)
 =#
 
 #=
@@ -11,6 +15,8 @@ const GateSpacing = 30
 const LineSpacing = 40
 const ΔX = Point(GateSpacing, 0)
 const ΔY = Point(0, LineSpacing)
+
+
 
 #= 
     help function 
@@ -72,7 +78,7 @@ function txtQbit(StartX::Int, lines::Int, init::Int=-1; dy=ΔY)
     pos = Point(StartX, 0) + dy*(lines-1) 
     initState = init==-1 ? "?" : string(init)
     text = "|" * string(initState) * ">" *
-            sub("Q"*string(lines))
+            sub("Q"*string(lines-1))
     # In fact it support HTML code `&#10217;`
     # ⟩, U+27E9
     
@@ -87,40 +93,11 @@ function txtQbit(StartX::Int, lines::Int, init::Int=-1; dy=ΔY)
     
 end
 
-#= 
-    Gates 
+
+
+#=
+    Nodes
 =#
-
-"""
-    gate(C::Point, edge_len=20, txt="H")
-
-Draw simple gates with box.
-"""
-function gate(C::Point, txt="H", edge_len=20)
-    # TODO: support long gates
-    # draw background
-    sethue("white") 
-    box(C, edge_len, edge_len, :fill)
-    
-    # draw border
-    sethue("black") 
-    box(C, edge_len, edge_len, :stroke)
-    
-    # write text in box
-    # sethue("black")
-    fontsize(edge_len)
-    # fontface("Times New Roman")
-    text(
-        txt,
-        C,
-        halign = :center, 
-        valign = :middle
-    )
-end
-gate(C::Point, txt::Char) = gate(C, string(txt))
-gate(C::Point, txt::Char, edge_len) = 
-    gate(C, string(txt), edge_len)
-
 
 """
     NotControlCircle(C::Point, size=:9, color=:"white")
@@ -172,40 +149,62 @@ function Cross(C::Point, width=18)
 end
 
 
-"""
-    Toffoli(d::Dict, col::Int=1)
 
-General Toffoli Gate.
+#= 
+    Gates 
+=#
 
-Input dict format:
-```julia
-d = Dict(
-    1 => "",    # "" or "C" for Control Node
-    2 => "C",
-    3 => "NC"   # "NC" for Not Control Node
-    4 => "T"    # "T" for controlled qbit(Not Gate)
-)
-```
 """
-function Toffoli(d::Dict, col::Int=1)
-    ks = collect(keys(d))
-    upper = P(col, minimum(ks))
-    lower = P(col, maximum(ks))
-    line(upper, lower, :stroke)
+    gate(C::Point, edge_len=20, txt="H")
+
+Draw simple gates with box.
+"""
+function gate(C::Point, txt="H", edge_len=20)
+    # TODO: support long name gates
+    # draw background
+    sethue("white") 
+    box(C, edge_len, edge_len, :fill)
     
-    for (y, typ) in d
-        if typ == "" || typ == "C"
-            ControlCircle(P(col, y))
-        elseif typ == "NC"
-            NotControlCircle(P(col, y))
-        elseif typ == "T"
-            Not(P(col, y))
-        end
-    end
-
+    # draw border
+    sethue("black") 
+    box(C, edge_len, edge_len, :stroke)
+    
+    # write text in box
+    # sethue("black")
+    fontsize(edge_len)
+    # fontface("Times New Roman")
+    text(
+        txt,
+        C,
+        halign = :center, 
+        valign = :middle
+    )
 end
+gate(C::Point, txt::Char) = gate(C, string(txt))
+gate(C::Point, txt::Char, edge_len) = 
+    gate(C, string(txt), edge_len)
+
+
+#= Single Gates
+- [ ] Measure
+
+ConstantGate:
+
+- [ ] H Gate: Hadamard transformation
+- [ ] I2 Gate:identity operation (no-op)
+- [ ] S/S-dag Gate: π/4 phase gate and its conjugate transpose
+- [ ] T/T-dag Gate: π/8 phase gate and its conjugate transpose
+- [ ] X/Y/Z Gate: Pauli-X/Y/Z Gate
+
+- [ ] P0/P1 Gate
+- [ ] Pd/Pu Gate
+
+=#
+
+
 
 """
+    MultiQBitGate(QBits::Dict, col::Int)
 
 Draw general multi Qbits gate, you can draw single Qbit too.
 
@@ -241,18 +240,36 @@ function MultiQBitGate(QBits::Dict, col::Int)
         elseif typ == "X"
             Cross(P(col, y))
         elseif startswith(typ, "SG:") && length(typ)==4
-            # TODO: support long gates
             gateType = typ[end]
             gate(P(col, y), gateType)
         end
     end
 end
 
-function MeasureG(C::Point)
-    body
+#=
+ConstantGate
+    - [ ] CNOT Gate[2-QBits]
+    - [ ] SWAP Gate[2-QBits]
+    - [ ] Toffoli Gate[3-QBits]
+
+=#
+
+function CNOT(d::Dict, col::Int=1)
+    throw("Not implement")
+end
+
+function SWAP(d::Dict, col::Int=1)
+    throw("Not implement")
+end
+
+function Toffoli(d::Dict, col::Int=1)
+    throw("Not implement")
 end
 
 
+#=
+    using
+=#
 
 @svg begin
 nQbits = 8
@@ -272,7 +289,6 @@ ControlCircle(P(1,3))
 Not(P(1,4))
 Cross(P(1,5))
 
-Toffoli(Dict(2=>"",3=>"",4=>"NC",5=>"T"), 3)
 MultiQBitGate(Dict(2=>"",3=>"",4=>"NC",5=>"N"), 4)
 MultiQBitGate(
     Dict(
